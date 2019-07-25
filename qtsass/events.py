@@ -10,6 +10,8 @@
 
 # yapf: disable
 
+import os
+
 # Third party imports
 from watchdog.events import FileSystemEventHandler
 
@@ -27,6 +29,22 @@ class SourceEventHandler(FileSystemEventHandler):
         self._destination = destination
         self._compiler = compiler
 
-    def on_modified(self, event):
+    def process_event_for_path(self, path):
         """Override watchdog method to handle on file modification events."""
+        if os.path.isfile(self._source):
+            if isinstance(path, bytes):
+                path = path.decode()
+            print(self._source, path)
+            if path != self._source:
+                return
+
         self._compiler(self._source, self._destination)
+
+    def on_modified(self, event):
+        return self.process_event_for_path(event.src_path)
+
+    def on_moved(self, event):
+        return self.process_event_for_path(event.dest_path)
+
+    def on_created(self, event):
+        return self.process_event_for_path(event.src_path)
